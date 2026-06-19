@@ -90,7 +90,7 @@ button:focus-visible {
   text-decoration: none;
 }
 .divMatch{
-  background-color: yellowgreen;
+  background-color: white;
   margin-right: 50px;
   margin-left: 50px;
   margin-bottom: 10px;
@@ -114,7 +114,7 @@ button:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-left: 10px; 
-  background-color: gray;
+  background-color: white;
   margin-top: 10px;
   margin-bottom: 10px;
 }
@@ -127,12 +127,7 @@ button:focus-visible {
   width: 300px;
 }
 
-.divMatch {
-  background-color: white;
-  margin-bottom: 20px;
-  width: 300px;
-  box-sizing: border-box;
-}
+
 .round{
   border-left: 2px dashed red;
   margin-left: -2px; 
@@ -142,10 +137,4 @@ button:focus-visible {
 .finalTD {
   text-align: center;
   vertical-align: middle;
-}
-.spanPartisipantWiner{
-  border:5px solid rgb(0, 255, 0);
-}
-.matchEnd{
-  border:5px solid rgb(0, 255, 0);
 }

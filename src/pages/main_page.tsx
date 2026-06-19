@@ -1,7 +1,7 @@
 export default function Main_page(){
     return(
         <>
-            <h2>Main page132</h2>
+            <h2>Main page</h2>
         </>
     )
 }

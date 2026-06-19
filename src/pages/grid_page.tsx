@@ -15,13 +15,38 @@ export default function grid_page(){
   useEffect (()=>{if (thisTournament.mathes.length===0){
     createGrid(thisTournament);//Создаем турнирную сетку
     console.log(thisTournament);
-  }})
+  }},[])
   const [rounds, setRounds] = useState(0)
   useEffect (()=>{
     const res = maxRound(thisTournament.mathes, "all")-1//Находим кол-во раундов
     setRounds(res)
   })
 const roundArr = (Array.from({ length: rounds }, (_, i) => i + 1));//Создаем массив с раундами для дальнейшей работы
+useEffect(() => {
+  console.log('=== ОТЛАДКА ===');
+  console.log('Все матчи:', thisTournament.mathes);
+  console.log('roundArr:', roundArr);
+  
+  // Проверяем верхнюю сетку
+  roundArr.forEach(round => {
+    const matches = thisTournament.mathes.filter(m => 
+      m.gridType === "upper" && m.round === round
+    );
+    if (matches.length > 0) {
+      console.log(`Верхняя сетка, раунд ${round}:`, matches.length, 'матчей');
+    }
+  });
+  
+  // Проверяем нижнюю сетку
+  roundArr.forEach(round => {
+    const matches = thisTournament.mathes.filter(m => 
+      m.gridType === "down" && m.round === round
+    );
+    if (matches.length > 0) {
+      console.log(`Нижняя сетка, раунд ${round}:`, matches.length, 'матчей');
+    }
+  });
+}, [thisTournament.mathes, roundArr]);
   return (
     <div>
       <h1>Турнирная сетка</h1>{/* Заголовок на странице */}

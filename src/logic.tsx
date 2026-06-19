@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { createContext, useContext } from 'react';
-
+import { motion,  } from 'framer-motion';
 export  interface Tournaments {
   index: number
   tournamentName: string
@@ -19,8 +19,8 @@ export interface Match {
   round:number
   gridType: 'upper'| 'down' | 'final'
   buyPass: boolean
-  participantA: Participant
-  participantB: Participant
+  participantA: Participant|null
+  participantB: Participant|null
   AScore: number|null
   BScore: number|null
   winer: Participant |null
@@ -124,7 +124,7 @@ const useTournament = () => {
 
 
   //Вспомогательная функция для создания матчей
-  const generateMatch = (index: number,id: number, round:number, gridType: "upper" | 'down' | 'final', buyPass:boolean, participantA: Participant,participantB: Participant )=> {
+  const generateMatch = (index: number,id: number, round:number, gridType: "upper" | 'down' | 'final', buyPass:boolean, participantA: Participant| null,participantB: Participant| null,)=> {
     const newMatch: Match = {
       indexInRound: index,
       id: id,
@@ -281,9 +281,9 @@ const useTournament = () => {
     if (thisMatchIndex===-1){alert("Матч не найдем"); return}
     const thisMatch = {...tournament.mathes[thisMatchIndex]}
     player === 'a' ? //Определяем участника для которого ввели счет
-      thisMatch!.AScore = Number(value): 
-      thisMatch!.BScore = Number(value)
- 
+      thisMatch.AScore = Number(value): 
+      thisMatch.BScore = Number(value)
+  
     const newMachesList = [...tournament.mathes]
     newMachesList[matchId-1] = thisMatch
     updateTournament(tournament.index, {mathes: newMachesList})
@@ -296,9 +296,12 @@ const useTournament = () => {
     if (thisMatchIndex===-1){alert("Матч не найдем"); return}
     const thisMatch = {...tournament.mathes[thisMatchIndex]}
     const newMachesList = [...tournament.mathes]
-    if (thisMatch.completed && thisMatch.winer){//Если матч уже был завершен, то  нужно обнулить результаты матчей, куда перешли участники
+    if (thisMatch.completed && thisMatch.winer){
+      console.log("Изменяем матч");
+      
+      //Если матч уже был завершен, то  нужно обнулить результаты матчей, куда перешли участники
         const nextRound = thisMatch.round+1;
-          const editNextWinerMatch = newMachesList
+          const editNextWinerMatch = [...newMachesList]
           .filter(m=>m.round>=nextRound && //Находим матчи где один из участников - участник этого матча
           (
             m.participantA?.id ===thisMatch.participantA?.id||
@@ -308,31 +311,55 @@ const useTournament = () => {
           ))
           .map(m=>{//Обнуляем участника и счет
             if (m.participantA?.id === thisMatch.participantA?.id || m.participantA?.id === thisMatch.participantB?.id) {
+              console.log("первое условие");
               m.participantA = nullPartisipant;
               m.AScore = 0
               m.BScore = 0
             }
             if (m.participantB?.id === thisMatch.participantA?.id || m.participantB?.id === thisMatch.participantB?.id) {
+               console.log("второе условие");
               m.participantB = nullPartisipant;
               m.AScore = 0
               m.BScore =0
             }
             return m
           })
-          if (editNextWinerMatch){
+          if (editNextWinerMatch.length>0){
+            console.log("измененные матчи есть");
+            
             editNextWinerMatch.map(m=>{
               newMachesList[m.id-1] = m 
             })
           }
     }
+      if (thisMatch.AScore !=null && thisMatch.BScore!= null){//проверяем введен ли счет у обоих участников
+      if (thisMatch.AScore > thisMatch.BScore){//Определяем победителя
+        thisMatch.winer = thisMatch.participantA
+        thisMatch.loser = thisMatch.participantB
+     
+      } 
+    else if (thisMatch.AScore < thisMatch.BScore){
+      thisMatch.winer = thisMatch.participantB
+      thisMatch.loser = thisMatch.participantA
+    }
+    else if (thisMatch.AScore === thisMatch.BScore){//Если счет равный то победителя нет
+      console.log("Счет ранвый");
+      
+      thisMatch.winer = nullPartisipant
+      thisMatch.loser = nullPartisipant
+    }
+    }
     if (thisMatch.AScore!==null&& thisMatch.BScore!==null && (thisMatch.AScore!==thisMatch.BScore)){//Если счет у обоих участников указан
       thisMatch.completed=true//Матч считаем законченным
       newMachesList[matchId-1] = thisMatch
-      const newNextMatchWiner = nextWinerMatch(tournament.mathes, matchId)//Вызываем функцию для определения следующего матча для победителя
+      const newUpdMatchList = [...newMachesList]
+      console.log(`${newUpdMatchList}`);
+      
+      const newNextMatchWiner = nextWinerMatch(newUpdMatchList, matchId)//Вызываем функцию для определения следующего матча для победителя
       if (!newNextMatchWiner){console.log("Матч не найден");}
       else {newMachesList[newNextMatchWiner.id-1] = newNextMatchWiner}//Устанавливаем следущий мат для победителя
       if(thisMatch.gridType==='upper'){//Если сетка верхняя, тогда нужно определить матч для проигравшего
-        const nextMatchLoser = nextLoserMatch(tournament.mathes, matchId)//Находим этот матч
+        const nextMatchLoser = nextLoserMatch(newUpdMatchList, matchId)//Находим этот матч
         if (!newNextMatchWiner|| nextMatchLoser===null){console.log("Матч не найден");}
         else newMachesList[nextMatchLoser.id-1] = nextMatchLoser
       }
@@ -366,8 +393,9 @@ const useTournament = () => {
         }
       })
     }
-      updateTournament(tournament.index, {mathes: newMachesList})//Обновляем турнир с новыми матчами
+      
     }
+    updateTournament(tournament.index, {mathes: newMachesList})//Обновляем турнир с новыми матчами
   }
 
 
@@ -496,31 +524,39 @@ const drawGrid = (thisTournament: Tournaments, grid: "upper" | "down" | "final",
         .filter((a) => a.gridType === grid && a.round === r)
         ?.sort((a, b) => a.round - b.round)
         .map((m) => (
-          <div
+          <motion.div
             key={m.id}
-            className={`divMatch${m.completed?" matchEnd":""}`}
+            className="divMatch"
+            initial={{ opacity: 0, y: 20 }}        // Начинаем прозрачным и ниже
+            animate={{ opacity: 1, y: 0 }}         // Заканчиваем видимым на месте
+            transition={{ duration: 0.8 }}          // За 0.3 секунды
+            whileHover={{ scale: 1.08 }}            // При наведении чуть увеличиваем
           >
             {drawMatchesPartisipantInGrid(thisTournament, m, "a")}
             {drawMatchesPartisipantInGrid(thisTournament, m, "b")}
-          </div>
+          </motion.div>
         ))}
     </td>
   ));
 };
   const drawMatchesPartisipantInGrid = (thisTournament: Tournaments, m: Match, participant: "a"| "b")=>{
-    let thisParsipiant: Participant
+     let thisParsipiant: Participant|null
     if (participant==='a'){thisParsipiant = m.participantA}
     else {thisParsipiant = m.participantB}
     const isThisparsipiantWiner: boolean = m.winer === thisParsipiant
-    
     return(
                   <div 
                   className="divPartisipant">
                   {/* В блоке span будет содержаться имя участника */}
-                  <span className={`spanPartisipant${isThisparsipiantWiner ? " spanPartisipantWiner" : ""}`}>
+                  <motion.span className="spanPartisipant"
+                  animate={isThisparsipiantWiner ? {
+        scale: [1, 1.2, 1],  // Массив значений для пульсации [citation:8]
+        color: ['#333', '#2e7d32', '#2e7d32']
+    } : {color: ['#333', '#333', '#333']}}
+    transition={{ duration: 0.5 }}>
                     {participant === "a" &&m.participantA?.name}
                     {participant === "b" &&m.participantB?.name}
-                  </span>
+                  </motion.span>
                   {/* В блоке каждого участника так же должно содержаться поле с вводом его результатов */}
                   {!m.buyPass&&(m.participantA!.id>0)&&(m.participantB!.id>0)&&(
                   <input
@@ -535,7 +571,11 @@ const drawGrid = (thisTournament: Tournaments, grid: "upper" | "down" | "final",
                       if (value!=="") inputScore(thisTournament, participant, m.id, Number(value))
                       else inputScore(thisTournament, participant, m.id, 0)
                     }}
-                    onBlur={()=>checkScore(thisTournament, m.id)}>
+                    onKeyDown={(e) => {
+    if (e.key === 'Enter') {
+      checkScore(thisTournament, m.id);
+    }
+  }}>
                   </input>)}
                   </div> 
     )
